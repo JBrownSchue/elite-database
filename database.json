@@ -1,0 +1,52 @@
+{
+  "products": [
+    {
+      "id": "prod-001",
+      "sku": "TSHIRT-001",
+      "name": "Basic T-Shirt",
+      "description": "Klassisches T-Shirt aus Baumwolle.",
+      "category": "Bekleidung",
+      "brand": "Beispielmarke",
+      "prices": [
+        {
+          "currency": "EUR",
+          "amount": 1999,
+          "taxRate": 19,
+          "priceType": "standard",
+          "validFrom": "2025-01-01",
+          "validUntil": null
+        }
+      ],
+      "stockQuantity": 100,
+      "isActive": true
+    },
+    {
+      "id": "prod-002",
+      "sku": "HOODIE-001",
+      "name": "Premium Hoodie",
+      "description": "Warmer Hoodie mit Kapuze.",
+      "category": "Bekleidung",
+      "brand": "Beispielmarke",
+      "prices": [
+        {
+          "currency": "EUR",
+          "amount": 4999,
+          "taxRate": 19,
+          "priceType": "standard",
+          "validFrom": "2025-01-01",
+          "validUntil": null
+        },
+        {
+          "currency": "EUR",
+          "amount": 3999,
+          "taxRate": 19,
+          "priceType": "sale",
+          "validFrom": "2025-02-01",
+          "validUntil": "2025-02-28"
+        }
+      ],
+      "stockQuantity": 50,
+      "isActive": true
+    }
+  ]
+}
