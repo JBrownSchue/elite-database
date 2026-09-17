@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
 
 from data.elitedb import Database
 
-DATABASE_FILE = Path(__file__).resolve().parents[2] / "database.json"
+DATABASE_PATH = Path(__file__).resolve().parents[2] / "database"
 
 
 class AttributeEditor(QWidget):
@@ -153,10 +153,14 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("ELITE · Produktdatenbank")
         self.resize(1200, 760)
         try:
-            self.database = Database.load(DATABASE_FILE)
+            self.database = Database.create(DATABASE_PATH)
+            if "products" not in self.database.collections_list():
+                self.database.create_collection("products")
         except (OSError, ValueError, json.JSONDecodeError) as error:
             QMessageBox.critical(self, "Datenbankfehler", str(error))
-            self.database = Database(data={"products": []})
+            self.database = Database.create(DATABASE_PATH)
+            if "products" not in self.database.collections_list():
+                self.database.create_collection("products")
         self.products = []
         self.build_ui()
         self.refresh()
@@ -248,7 +252,7 @@ class MainWindow(QMainWindow):
         dialog = ProductDialog(parent=self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             try:
-                self.database.add(dialog.result)
+                self.database.insert("products", dialog.result)
                 self.save_database()
                 self.refresh()
             except ValueError as error:
@@ -262,7 +266,7 @@ class MainWindow(QMainWindow):
         dialog = ProductDialog(product, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             try:
-                self.database.update(product["id"], dialog.result)
+                self.database.update("products", product["id"], dialog.result)
                 self.save_database()
                 self.refresh()
             except (ValueError, KeyError) as error:
@@ -275,13 +279,13 @@ class MainWindow(QMainWindow):
             return
         answer = QMessageBox.question(self, "Löschen bestätigen", f"„{product.get('name', product['id'])}“ löschen?")
         if answer == QMessageBox.StandardButton.Yes:
-            self.database.delete(product["id"])
+            self.database.delete("products", product["id"])
             self.save_database()
             self.refresh()
 
     def save_database(self):
         try:
-            self.database.save(DATABASE_FILE)
+            self.database.rebuild_index("products")
             self.statusBar().showMessage("Änderungen gespeichert")
         except (OSError, ValueError) as error:
             QMessageBox.critical(self, "Speicherfehler", str(error))
