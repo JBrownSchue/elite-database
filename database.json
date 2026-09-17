@@ -60,6 +60,19 @@
       "prices": [
         10
       ]
+    },
+    {
+      "id": "12345678",
+      "sku": "1234567",
+      "name": "1234567",
+      "description": "1234567",
+      "category": "1234567123456723",
+      "brand": "",
+      "stockQuantity": 453454354,
+      "isActive": true,
+      "attributes": {
+        "Cyka": "Lecko mio"
+      }
     }
   ]
 }
