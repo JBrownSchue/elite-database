@@ -290,24 +290,7 @@ class MainWindow(QMainWindow):
 def main():
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
-    app.setStyleSheet("""
-        QWidget { font-family: Arial; font-size: 13px; color: #253044; }
-        QMainWindow, QDialog { background: #f5f6f8; }
-        #title { font-size: 25px; font-weight: 700; color: #172033; }
-        #dialogTitle { font-size: 20px; font-weight: 700; color: #172033; }
-        #sectionTitle { font-weight: 700; color: #344054; margin-top: 12px; }
-        QLineEdit, QComboBox, QTextEdit, QSpinBox { background: white; border: 1px solid #d0d5dd; border-radius: 6px; padding: 8px; }
-        QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QSpinBox:focus { border: 1px solid #3b82f6; }
-        QPushButton { background: white; border: 1px solid #cfd5df; border-radius: 6px; padding: 8px 13px; }
-        QPushButton:hover { background: #eef4ff; border-color: #8bb4f5; }
-        #primaryButton { background: #2563eb; color: white; border: none; font-weight: 700; }
-        #primaryButton:hover { background: #1d4ed8; }
-        #dangerButton { color: #b42318; }
-        QTableWidget { background: white; alternate-background-color: #f8fafc; border: 1px solid #dfe3e8; gridline-color: #edf0f3; selection-background-color: #dbeafe; selection-color: #172033; }
-        QHeaderView::section { background: #eef1f5; color: #475467; border: none; border-bottom: 1px solid #d0d5dd; padding: 9px; font-weight: 700; }
-        QTableWidget::item { padding: 7px; }
-        QStatusBar { color: #667085; background: #eef1f5; }
-    """)
+
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
