@@ -47,6 +47,19 @@
       ],
       "stockQuantity": 50,
       "isActive": true
+    },
+    {
+      "id": "123",
+      "sku": "TSHIRT-002",
+      "name": "sdf",
+      "description": "sdf",
+      "category": "Bekleidung",
+      "brand": "sdf",
+      "stockQuantity": 2,
+      "isActive": true,
+      "prices": [
+        10
+      ]
     }
   ]
 }
