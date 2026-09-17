@@ -3,7 +3,21 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QDialog, QDialogButtonBox, QFormLayout, QLineEdit, QMainWindow, QMessageBox, QPushButton, QTableWidget, QTableWidgetItem, QTextEdit, QToolBar, QVBoxLayout
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QTextEdit,
+    QToolBar,
+    QVBoxLayout,
+)
 
 from data.elitedb import Database
 
@@ -17,14 +31,28 @@ class ProductDialog(QDialog):
         self.resize(650, 600)
         self.fields = {}
         form = QFormLayout()
-        for key, label in [("id", "ID"), ("sku", "SKU"), ("name", "Name"), ("description", "Beschreibung"), ("category", "Kategorie"), ("brand", "Marke"), ("stockQuantity", "Bestand"), ("isActive", "Aktiv")]:
+        for key, label in [
+            ("id", "ID"),
+            ("sku", "SKU"),
+            ("name", "Name"),
+            ("description", "Beschreibung"),
+            ("category", "Kategorie"),
+            ("brand", "Marke"),
+            ("stockQuantity", "Bestand"),
+            ("isActive", "Aktiv"),
+        ]:
             field = QLineEdit(str((product or {}).get(key, "")))
             form.addRow(label, field)
             self.fields[key] = field
         self.prices = QTextEdit()
-        self.prices.setPlainText(json.dumps((product or {}).get("prices", []), ensure_ascii=False, indent=2))
+        self.prices.setPlainText(
+            json.dumps((product or {}).get("prices", []), ensure_ascii=False, indent=2)
+        )
         form.addRow("Preise als JSON", self.prices)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save
+            | QDialogButtonBox.StandardButton.Cancel
+        )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout = QVBoxLayout(self)
@@ -38,7 +66,12 @@ class ProductDialog(QDialog):
                 raise ValueError("Preise müssen eine JSON-Liste sein.")
             product = {key: self.fields[key].text().strip() for key in self.fields}
             product["stockQuantity"] = int(product["stockQuantity"] or 0)
-            product["isActive"] = product["isActive"].lower() in {"true", "1", "ja", "yes"}
+            product["isActive"] = product["isActive"].lower() in {
+                "true",
+                "1",
+                "ja",
+                "yes",
+            }
             product["prices"] = prices
             if any(not product[key] for key in ("id", "sku", "name")):
                 raise ValueError("ID, SKU und Name sind erforderlich.")
@@ -65,7 +98,12 @@ class MainWindow(QMainWindow):
         toolbar = QToolBar("Aktionen")
         toolbar.setMovable(False)
         self.addToolBar(toolbar)
-        for label, handler in [("Neu", self.create_product), ("Bearbeiten", self.update_product), ("Löschen", self.delete_product), ("Speichern", self.save_database)]:
+        for label, handler in [
+            ("Neu", self.create_product),
+            ("Bearbeiten", self.update_product),
+            ("Löschen", self.delete_product),
+            ("Speichern", self.save_database),
+        ]:
             button = QPushButton(label)
             button.clicked.connect(handler)
             toolbar.addWidget(button)
@@ -83,7 +121,16 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.table)
 
     def refresh_table(self):
-        columns = ["id", "sku", "name", "category", "brand", "stockQuantity", "isActive", "prices"]
+        columns = [
+            "id",
+            "sku",
+            "name",
+            "category",
+            "brand",
+            "stockQuantity",
+            "isActive",
+            "prices",
+        ]
         products = self.database.search(self.search.text())
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels(columns)
@@ -91,7 +138,17 @@ class MainWindow(QMainWindow):
         for row, product in enumerate(products):
             for column, key in enumerate(columns):
                 value = product.get(key)
-                text = f"{len(value)} Einträge" if key == "prices" and isinstance(value, list) else ("Ja" if value is True else "Nein" if value is False else str(value if value is not None else "—"))
+                text = (
+                    f"{len(value)} Einträge"
+                    if key == "prices" and isinstance(value, list)
+                    else (
+                        "Ja"
+                        if value is True
+                        else "Nein"
+                        if value is False
+                        else str(value if value is not None else "—")
+                    )
+                )
                 item = QTableWidgetItem(text)
                 item.setData(Qt.ItemDataRole.UserRole, product.get("id"))
                 if isinstance(value, (dict, list)):
@@ -119,7 +176,9 @@ class MainWindow(QMainWindow):
         record_id = self.selected_id()
         product = self.database.find(record_id) if record_id else None
         if not product:
-            QMessageBox.information(self, "Auswahl", "Bitte zuerst ein Produkt auswählen.")
+            QMessageBox.information(
+                self, "Auswahl", "Bitte zuerst ein Produkt auswählen."
+            )
             return
         dialog = ProductDialog(product, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
@@ -134,9 +193,18 @@ class MainWindow(QMainWindow):
         record_id = self.selected_id()
         product = self.database.find(record_id) if record_id else None
         if not product:
-            QMessageBox.information(self, "Auswahl", "Bitte zuerst ein Produkt auswählen.")
+            QMessageBox.information(
+                self, "Auswahl", "Bitte zuerst ein Produkt auswählen."
+            )
             return
-        if QMessageBox.question(self, "Löschen bestätigen", f"Produkt „{product.get('name', record_id)}“ löschen?") == QMessageBox.StandardButton.Yes:
+        if (
+            QMessageBox.question(
+                self,
+                "Löschen bestätigen",
+                f"Produkt „{product.get('name', record_id)}“ löschen?",
+            )
+            == QMessageBox.StandardButton.Yes
+        ):
             self.database.delete(record_id)
             self.save_database()
             self.refresh_table()

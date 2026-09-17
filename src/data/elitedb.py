@@ -4,7 +4,9 @@ from typing import Any
 
 
 class Database:
-    def __init__(self, path: str | Path | None = None, data: dict[str, Any] | None = None):
+    def __init__(
+        self, path: str | Path | None = None, data: dict[str, Any] | None = None
+    ):
         self.path = Path(path) if path else None
         self.data = data.copy() if data else {"products": []}
         self.data.setdefault("products", [])
@@ -33,8 +35,17 @@ class Database:
             raise ValueError(f"Die Sammlung '{collection}' ist keine Liste.")
         return values
 
-    def find(self, record_id: str, collection: str = "products") -> dict[str, Any] | None:
-        return next((record for record in self.all(collection) if record.get("id") == record_id), None)
+    def find(
+        self, record_id: str, collection: str = "products"
+    ) -> dict[str, Any] | None:
+        return next(
+            (
+                record
+                for record in self.all(collection)
+                if record.get("id") == record_id
+            ),
+            None,
+        )
 
     def add(self, record: dict[str, Any], collection: str = "products"):
         if not isinstance(record, dict) or not record.get("id"):
@@ -44,7 +55,9 @@ class Database:
         self.all(collection).append(record.copy())
         return record
 
-    def update(self, record_id: str, record: dict[str, Any], collection: str = "products"):
+    def update(
+        self, record_id: str, record: dict[str, Any], collection: str = "products"
+    ):
         records = self.all(collection)
         for index, current in enumerate(records):
             if current.get("id") == record_id:
@@ -68,4 +81,8 @@ class Database:
         query = query.strip().lower()
         if not query:
             return list(self.all(collection))
-        return [record for record in self.all(collection) if query in json.dumps(record, ensure_ascii=False).lower()]
+        return [
+            record
+            for record in self.all(collection)
+            if query in json.dumps(record, ensure_ascii=False).lower()
+        ]
