@@ -4,19 +4,10 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QApplication,
-    QDialog,
-    QDialogButtonBox,
-    QFormLayout,
-    QLineEdit,
-    QMainWindow,
-    QMessageBox,
-    QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
-    QTextEdit,
-    QToolBar,
-    QVBoxLayout,
+    QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,
+    QFormLayout, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox,
+    QPushButton, QSpinBox, QTableWidget, QTableWidgetItem, QTextEdit,
+    QVBoxLayout, QWidget
 )
 
 from data.elitedb import Database
@@ -24,143 +15,234 @@ from data.elitedb import Database
 DATABASE_FILE = Path(__file__).resolve().parents[2] / "database.json"
 
 
+class AttributeEditor(QWidget):
+    def __init__(self, attributes=None, parent=None):
+        super().__init__(parent)
+        self.rows = []
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.add_button = QPushButton("＋ Eigenschaft hinzufügen")
+        self.add_button.clicked.connect(self.add_row)
+        self.layout.addWidget(self.add_button)
+        for key, value in (attributes or {}).items():
+            self.add_row(key, value)
+
+    def add_row(self, key="", value=""):
+        row = QHBoxLayout()
+        name = QLineEdit(str(key))
+        name.setPlaceholderText("Eigenschaft, z. B. Größe")
+        kind = QComboBox()
+        kind.addItems(["Text", "Zahl", "Ja/Nein", "Mehrzeiliger Text"])
+        value_field = QLineEdit()
+        value_field.setPlaceholderText("Wert")
+        remove = QPushButton("Entfernen")
+        remove.setObjectName("secondaryButton")
+        row.addWidget(name, 2)
+        row.addWidget(kind, 1)
+        row.addWidget(value_field, 2)
+        row.addWidget(remove)
+        self.layout.insertLayout(self.layout.count() - 1, row)
+        record = (row, name, kind, value_field)
+        self.rows.append(record)
+        remove.clicked.connect(lambda: self.remove_row(record))
+        self.set_value_type(kind, value_field, value)
+        kind.currentTextChanged.connect(lambda text: self.update_editor(text, value_field))
+
+    def set_value_type(self, kind, field, value):
+        if isinstance(value, bool):
+            kind.setCurrentText("Ja/Nein")
+        elif isinstance(value, (int, float)) and not isinstance(value, bool):
+            kind.setCurrentText("Zahl")
+        elif isinstance(value, str) and "\n" in value:
+            kind.setCurrentText("Mehrzeiliger Text")
+        field.setText(str(value).lower() if isinstance(value, bool) else str(value))
+        self.update_editor(kind.currentText(), field)
+
+    def update_editor(self, text, field):
+        field.setPlaceholderText("Ja oder Nein" if text == "Ja/Nein" else "Zahl eingeben" if text == "Zahl" else "Wert")
+
+    def remove_row(self, record):
+        row, *_ = record
+        while row.count():
+            item = row.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        self.layout.removeItem(row)
+        self.rows.remove(record)
+
+    def values(self):
+        result = {}
+        for _, name, kind, field in self.rows:
+            key = name.text().strip()
+            value = field.text().strip()
+            if not key:
+                raise ValueError("Jede zusätzliche Eigenschaft benötigt einen Namen.")
+            if key in result:
+                raise ValueError(f"Die Eigenschaft '{key}' wurde doppelt verwendet.")
+            if kind.currentText() == "Zahl":
+                try:
+                    value = float(value) if "." in value else int(value)
+                except ValueError:
+                    raise ValueError(f"'{value}' ist keine gültige Zahl.")
+            elif kind.currentText() == "Ja/Nein":
+                if value.lower() not in {"ja", "nein", "true", "false", "1", "0"}:
+                    raise ValueError(f"'{value}' ist kein gültiger Ja/Nein-Wert.")
+                value = value.lower() in {"ja", "true", "1"}
+            result[key] = value
+        return result
+
+
 class ProductDialog(QDialog):
     def __init__(self, product=None, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Produkt bearbeiten" if product else "Produkt anlegen")
-        self.resize(650, 600)
-        self.fields = {}
+        self.product = product or {}
+        self.setWindowTitle("Produkt bearbeiten" if product else "Neues Produkt")
+        self.resize(720, 650)
+        layout = QVBoxLayout(self)
+        title = QLabel(self.windowTitle())
+        title.setObjectName("dialogTitle")
+        layout.addWidget(title)
         form = QFormLayout()
-        for key, label in [
-            ("id", "ID"),
-            ("sku", "SKU"),
-            ("name", "Name"),
-            ("description", "Beschreibung"),
-            ("category", "Kategorie"),
-            ("brand", "Marke"),
-            ("stockQuantity", "Bestand"),
-            ("isActive", "Aktiv"),
-        ]:
-            field = QLineEdit(str((product or {}).get(key, "")))
+        self.fields = {}
+        definitions = [("id", "ID *"), ("sku", "SKU *"), ("name", "Name *"), ("description", "Beschreibung"), ("category", "Kategorie"), ("brand", "Marke")]
+        for key, label in definitions:
+            field = QLineEdit(str(self.product.get(key, "")))
             form.addRow(label, field)
             self.fields[key] = field
-        self.prices = QTextEdit()
-        self.prices.setPlainText(
-            json.dumps((product or {}).get("prices", []), ensure_ascii=False, indent=2)
-        )
-        form.addRow("Preise als JSON", self.prices)
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save
-            | QDialogButtonBox.StandardButton.Cancel
-        )
+        stock = QSpinBox()
+        stock.setRange(0, 1000000000)
+        stock.setValue(int(self.product.get("stockQuantity", 0) or 0))
+        self.fields["stockQuantity"] = stock
+        form.addRow("Bestand", stock)
+        active = QCheckBox("Produkt ist aktiv")
+        active.setChecked(bool(self.product.get("isActive", True)))
+        self.fields["isActive"] = active
+        form.addRow("Status", active)
+        layout.addLayout(form)
+        label = QLabel("Zusätzliche Eigenschaften")
+        label.setObjectName("sectionTitle")
+        layout.addWidget(label)
+        layout.addWidget(QLabel("Ergänze Eigenschaften wie Größe, Verlag oder Spieleranzahl ohne JSON.") )
+        attributes = self.product.get("attributes", {})
+        if not isinstance(attributes, dict):
+            attributes = {}
+        self.attributes = AttributeEditor(attributes)
+        layout.addWidget(self.attributes)
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
-        layout = QVBoxLayout(self)
-        layout.addLayout(form)
         layout.addWidget(buttons)
 
     def accept(self):
         try:
-            prices = json.loads(self.prices.toPlainText() or "[]")
-            if not isinstance(prices, list):
-                raise ValueError("Preise müssen eine JSON-Liste sein.")
-            product = {key: self.fields[key].text().strip() for key in self.fields}
-            product["stockQuantity"] = int(product["stockQuantity"] or 0)
-            product["isActive"] = product["isActive"].lower() in {
-                "true",
-                "1",
-                "ja",
-                "yes",
-            }
-            product["prices"] = prices
-            if any(not product[key] for key in ("id", "sku", "name")):
+            values = {key: field.text().strip() for key, field in self.fields.items() if isinstance(field, QLineEdit)}
+            if any(not values[key] for key in ("id", "sku", "name")):
                 raise ValueError("ID, SKU und Name sind erforderlich.")
-            self.result = product
+            values["stockQuantity"] = self.fields["stockQuantity"].value()
+            values["isActive"] = self.fields["isActive"].isChecked()
+            values["attributes"] = self.attributes.values()
+            self.result = values
             super().accept()
-        except (ValueError, json.JSONDecodeError) as error:
-            QMessageBox.warning(self, "Ungültige Eingabe", str(error))
+        except ValueError as error:
+            QMessageBox.warning(self, "Eingabe prüfen", str(error))
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("ELITE Datenbankverwaltung")
-        self.resize(1200, 700)
+        self.setWindowTitle("ELITE · Produktdatenbank")
+        self.resize(1200, 760)
         try:
             self.database = Database.load(DATABASE_FILE)
-        except (OSError, json.JSONDecodeError, ValueError) as error:
+        except (OSError, ValueError, json.JSONDecodeError) as error:
             QMessageBox.critical(self, "Datenbankfehler", str(error))
             self.database = Database(data={"products": []})
+        self.products = []
         self.build_ui()
-        self.refresh_table()
+        self.refresh()
 
     def build_ui(self):
-        toolbar = QToolBar("Aktionen")
-        toolbar.setMovable(False)
-        self.addToolBar(toolbar)
-        for label, handler in [
-            ("Neu", self.create_product),
-            ("Bearbeiten", self.update_product),
-            ("Löschen", self.delete_product),
-            ("Speichern", self.save_database),
-        ]:
-            button = QPushButton(label)
-            button.clicked.connect(handler)
-            toolbar.addWidget(button)
-        toolbar.addSeparator()
+        root = QWidget()
+        layout = QVBoxLayout(root)
+        layout.setContentsMargins(28, 24, 28, 24)
+        heading = QHBoxLayout()
+        title = QLabel("Produktdatenbank")
+        title.setObjectName("title")
+        heading.addWidget(title)
+        heading.addStretch()
+        add = QPushButton("＋ Neues Produkt")
+        add.setObjectName("primaryButton")
+        add.clicked.connect(self.create_product)
+        heading.addWidget(add)
+        layout.addLayout(heading)
+        tools = QHBoxLayout()
         self.search = QLineEdit()
-        self.search.setPlaceholderText("Produkte durchsuchen …")
-        self.search.textChanged.connect(self.refresh_table)
-        toolbar.addWidget(self.search)
+        self.search.setPlaceholderText("Suchen …")
+        self.search.textChanged.connect(self.refresh)
+        tools.addWidget(self.search, 1)
+        self.category = QComboBox()
+        self.category.currentTextChanged.connect(self.refresh)
+        tools.addWidget(self.category)
+        edit = QPushButton("Bearbeiten")
+        edit.clicked.connect(self.edit_product)
+        tools.addWidget(edit)
+        delete = QPushButton("Löschen")
+        delete.setObjectName("dangerButton")
+        delete.clicked.connect(self.delete_product)
+        tools.addWidget(delete)
+        layout.addLayout(tools)
         self.table = QTableWidget()
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setAlternatingRowColors(True)
-        self.table.cellDoubleClicked.connect(lambda *_: self.update_product())
-        self.setCentralWidget(self.table)
+        self.table.itemSelectionChanged.connect(self.show_details)
+        self.table.cellDoubleClicked.connect(lambda *_: self.edit_product())
+        layout.addWidget(self.table, 3)
+        self.details = QTextEdit()
+        self.details.setReadOnly(True)
+        self.details.setPlaceholderText("Produkt auswählen, um die Details zu sehen.")
+        layout.addWidget(self.details, 1)
+        self.setCentralWidget(root)
+        self.statusBar().showMessage("Bereit")
 
-    def refresh_table(self):
-        columns = [
-            "id",
-            "sku",
-            "name",
-            "category",
-            "brand",
-            "stockQuantity",
-            "isActive",
-            "prices",
-        ]
-        products = self.database.search(self.search.text())
+    def refresh(self):
+        records = self.database.all("products")
+        current = self.category.currentText()
+        categories = sorted({str(record.get("category", "Ohne Kategorie")) for record in records})
+        self.category.blockSignals(True)
+        self.category.clear()
+        self.category.addItem("Alle Kategorien")
+        self.category.addItems(categories)
+        if current in categories:
+            self.category.setCurrentText(current)
+        self.category.blockSignals(False)
+        query = self.search.text().lower().strip()
+        self.products = [record for record in records if (not query or query in json.dumps(record, ensure_ascii=False).lower()) and (self.category.currentText() == "Alle Kategorien" or str(record.get("category", "Ohne Kategorie")) == self.category.currentText())]
+        columns = [("name", "Produkt"), ("sku", "SKU"), ("category", "Kategorie"), ("brand", "Marke"), ("stockQuantity", "Bestand"), ("isActive", "Status")]
+        self.table.setSortingEnabled(False)
         self.table.setColumnCount(len(columns))
-        self.table.setHorizontalHeaderLabels(columns)
-        self.table.setRowCount(len(products))
-        for row, product in enumerate(products):
-            for column, key in enumerate(columns):
-                value = product.get(key)
-                text = (
-                    f"{len(value)} Einträge"
-                    if key == "prices" and isinstance(value, list)
-                    else (
-                        "Ja"
-                        if value is True
-                        else "Nein"
-                        if value is False
-                        else str(value if value is not None else "—")
-                    )
-                )
+        self.table.setHorizontalHeaderLabels([label for _, label in columns])
+        self.table.setRowCount(len(self.products))
+        for row, record in enumerate(self.products):
+            for col, (key, _) in enumerate(columns):
+                value = record.get(key, "—")
+                text = "Aktiv" if value is True else "Inaktiv" if value is False else str(value)
                 item = QTableWidgetItem(text)
-                item.setData(Qt.ItemDataRole.UserRole, product.get("id"))
-                if isinstance(value, (dict, list)):
-                    item.setToolTip(json.dumps(value, ensure_ascii=False, indent=2))
-                self.table.setItem(row, column, item)
+                item.setData(Qt.ItemDataRole.UserRole, record.get("id"))
+                self.table.setItem(row, col, item)
+        self.table.setSortingEnabled(True)
         self.table.resizeColumnsToContents()
-        self.statusBar().showMessage(f"{len(products)} Produkte")
+        self.table.setColumnWidth(0, 240)
+        self.statusBar().showMessage(f"{len(self.products)} Produkte angezeigt")
 
-    def selected_id(self):
+    def selected(self):
         row = self.table.currentRow()
-        item = self.table.item(row, 0) if row >= 0 else None
-        return item.data(Qt.ItemDataRole.UserRole) if item else None
+        return self.products[row] if 0 <= row < len(self.products) else None
+
+    def show_details(self):
+        product = self.selected()
+        self.details.setPlainText(json.dumps(product, ensure_ascii=False, indent=2) if product else "")
 
     def create_product(self):
         dialog = ProductDialog(parent=self)
@@ -168,57 +250,64 @@ class MainWindow(QMainWindow):
             try:
                 self.database.add(dialog.result)
                 self.save_database()
-                self.refresh_table()
+                self.refresh()
             except ValueError as error:
-                QMessageBox.warning(self, "Ungültige Eingabe", str(error))
+                QMessageBox.warning(self, "Nicht gespeichert", str(error))
 
-    def update_product(self):
-        record_id = self.selected_id()
-        product = self.database.find(record_id) if record_id else None
+    def edit_product(self):
+        product = self.selected()
         if not product:
-            QMessageBox.information(
-                self, "Auswahl", "Bitte zuerst ein Produkt auswählen."
-            )
+            QMessageBox.information(self, "Auswahl", "Bitte zuerst ein Produkt auswählen.")
             return
         dialog = ProductDialog(product, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             try:
-                self.database.update(record_id, dialog.result)
+                self.database.update(product["id"], dialog.result)
                 self.save_database()
-                self.refresh_table()
+                self.refresh()
             except (ValueError, KeyError) as error:
-                QMessageBox.warning(self, "Fehler", str(error))
+                QMessageBox.warning(self, "Nicht gespeichert", str(error))
 
     def delete_product(self):
-        record_id = self.selected_id()
-        product = self.database.find(record_id) if record_id else None
+        product = self.selected()
         if not product:
-            QMessageBox.information(
-                self, "Auswahl", "Bitte zuerst ein Produkt auswählen."
-            )
+            QMessageBox.information(self, "Auswahl", "Bitte zuerst ein Produkt auswählen.")
             return
-        if (
-            QMessageBox.question(
-                self,
-                "Löschen bestätigen",
-                f"Produkt „{product.get('name', record_id)}“ löschen?",
-            )
-            == QMessageBox.StandardButton.Yes
-        ):
-            self.database.delete(record_id)
+        answer = QMessageBox.question(self, "Löschen bestätigen", f"„{product.get('name', product['id'])}“ löschen?")
+        if answer == QMessageBox.StandardButton.Yes:
+            self.database.delete(product["id"])
             self.save_database()
-            self.refresh_table()
+            self.refresh()
 
     def save_database(self):
         try:
             self.database.save(DATABASE_FILE)
-            self.statusBar().showMessage("Gespeichert")
-        except OSError as error:
+            self.statusBar().showMessage("Änderungen gespeichert")
+        except (OSError, ValueError) as error:
             QMessageBox.critical(self, "Speicherfehler", str(error))
 
 
 def main():
     app = QApplication(sys.argv)
+    app.setStyle("Fusion")
+    app.setStyleSheet("""
+        QWidget { font-family: Arial; font-size: 13px; color: #253044; }
+        QMainWindow, QDialog { background: #f5f6f8; }
+        #title { font-size: 25px; font-weight: 700; color: #172033; }
+        #dialogTitle { font-size: 20px; font-weight: 700; color: #172033; }
+        #sectionTitle { font-weight: 700; color: #344054; margin-top: 12px; }
+        QLineEdit, QComboBox, QTextEdit, QSpinBox { background: white; border: 1px solid #d0d5dd; border-radius: 6px; padding: 8px; }
+        QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QSpinBox:focus { border: 1px solid #3b82f6; }
+        QPushButton { background: white; border: 1px solid #cfd5df; border-radius: 6px; padding: 8px 13px; }
+        QPushButton:hover { background: #eef4ff; border-color: #8bb4f5; }
+        #primaryButton { background: #2563eb; color: white; border: none; font-weight: 700; }
+        #primaryButton:hover { background: #1d4ed8; }
+        #dangerButton { color: #b42318; }
+        QTableWidget { background: white; alternate-background-color: #f8fafc; border: 1px solid #dfe3e8; gridline-color: #edf0f3; selection-background-color: #dbeafe; selection-color: #172033; }
+        QHeaderView::section { background: #eef1f5; color: #475467; border: none; border-bottom: 1px solid #d0d5dd; padding: 9px; font-weight: 700; }
+        QTableWidget::item { padding: 7px; }
+        QStatusBar { color: #667085; background: #eef1f5; }
+    """)
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
