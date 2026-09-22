@@ -4,10 +4,24 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,
-    QFormLayout, QHBoxLayout, QLabel, QLineEdit, QMainWindow, QMessageBox,
-    QPushButton, QSpinBox, QTableWidget, QTableWidgetItem, QTextEdit,
-    QVBoxLayout, QWidget
+    QApplication,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QTableWidget,
+    QTableWidgetItem,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
 
 from data.elitedb import Database
@@ -59,7 +73,9 @@ class AttributeEditor(QWidget):
         self.update_editor(kind.currentText(), field)
 
     def update_editor(self, text, field):
-        field.setPlaceholderText("Ja oder Nein" if text == "Ja/Nein" else "Zahl eingeben" if text == "Zahl" else "Wert")
+        field.setPlaceholderText(
+            "Ja oder Nein" if text == "Ja/Nein" else "Zahl eingeben" if text == "Zahl" else "Wert"
+        )
 
     def remove_row(self, record):
         row, *_ = record
@@ -83,7 +99,7 @@ class AttributeEditor(QWidget):
                 try:
                     value = float(value) if "." in value else int(value)
                 except ValueError:
-                    raise ValueError(f"'{value}' ist keine gültige Zahl.")
+                    raise ValueError(f"'{value}' ist keine gültige Zahl.") from None
             elif kind.currentText() == "Ja/Nein":
                 if value.lower() not in {"ja", "nein", "true", "false", "1", "0"}:
                     raise ValueError(f"'{value}' ist kein gültiger Ja/Nein-Wert.")
@@ -104,7 +120,14 @@ class ProductDialog(QDialog):
         layout.addWidget(title)
         form = QFormLayout()
         self.fields = {}
-        definitions = [("id", "ID *"), ("sku", "SKU *"), ("name", "Name *"), ("description", "Beschreibung"), ("category", "Kategorie"), ("brand", "Marke")]
+        definitions = [
+            ("id", "ID *"),
+            ("sku", "SKU *"),
+            ("name", "Name *"),
+            ("description", "Beschreibung"),
+            ("category", "Kategorie"),
+            ("brand", "Marke"),
+        ]
         for key, label in definitions:
             field = QLineEdit(str(self.product.get(key, "")))
             form.addRow(label, field)
@@ -122,13 +145,17 @@ class ProductDialog(QDialog):
         label = QLabel("Zusätzliche Eigenschaften")
         label.setObjectName("sectionTitle")
         layout.addWidget(label)
-        layout.addWidget(QLabel("Ergänze Eigenschaften wie Größe, Verlag oder Spieleranzahl ohne JSON.") )
+        layout.addWidget(
+            QLabel("Ergänze Eigenschaften wie Größe, Verlag oder Spieleranzahl ohne JSON.")
+        )
         attributes = self.product.get("attributes", {})
         if not isinstance(attributes, dict):
             attributes = {}
         self.attributes = AttributeEditor(attributes)
         layout.addWidget(self.attributes)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
+        )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -136,7 +163,9 @@ class ProductDialog(QDialog):
     def accept(self):
         try:
             values: dict[str, object] = {
-                key: field.text().strip() for key, field in self.fields.items() if isinstance(field, QLineEdit)
+                key: field.text().strip()
+                for key, field in self.fields.items()
+                if isinstance(field, QLineEdit)
             }
             if any(not values[key] for key in ("id", "sku", "name")):
                 raise ValueError("ID, SKU und Name sind erforderlich.")
@@ -224,8 +253,23 @@ class MainWindow(QMainWindow):
             self.category.setCurrentText(current)
         self.category.blockSignals(False)
         query = self.search.text().lower().strip()
-        self.products = [record for record in records if (not query or query in json.dumps(record, ensure_ascii=False).lower()) and (self.category.currentText() == "Alle Kategorien" or str(record.get("category", "Ohne Kategorie")) == self.category.currentText())]
-        columns = [("name", "Produkt"), ("sku", "SKU"), ("category", "Kategorie"), ("brand", "Marke"), ("stockQuantity", "Bestand"), ("isActive", "Status")]
+        self.products = [
+            record
+            for record in records
+            if (not query or query in json.dumps(record, ensure_ascii=False).lower())
+            and (
+                self.category.currentText() == "Alle Kategorien"
+                or str(record.get("category", "Ohne Kategorie")) == self.category.currentText()
+            )
+        ]
+        columns = [
+            ("name", "Produkt"),
+            ("sku", "SKU"),
+            ("category", "Kategorie"),
+            ("brand", "Marke"),
+            ("stockQuantity", "Bestand"),
+            ("isActive", "Status"),
+        ]
         self.table.setSortingEnabled(False)
         self.table.setColumnCount(len(columns))
         self.table.setHorizontalHeaderLabels([label for _, label in columns])
@@ -248,7 +292,9 @@ class MainWindow(QMainWindow):
 
     def show_details(self):
         product = self.selected()
-        self.details.setPlainText(json.dumps(product, ensure_ascii=False, indent=2) if product else "")
+        self.details.setPlainText(
+            json.dumps(product, ensure_ascii=False, indent=2) if product else ""
+        )
 
     def create_product(self):
         dialog = ProductDialog(parent=self)
@@ -279,7 +325,9 @@ class MainWindow(QMainWindow):
         if not product:
             QMessageBox.information(self, "Auswahl", "Bitte zuerst ein Produkt auswählen.")
             return
-        answer = QMessageBox.question(self, "Löschen bestätigen", f"„{product.get('name', product['id'])}“ löschen?")
+        answer = QMessageBox.question(
+            self, "Löschen bestätigen", f"„{product.get('name', product['id'])}“ löschen?"
+        )
         if answer == QMessageBox.StandardButton.Yes:
             self.database.delete("products", product["id"])
             self.save_database()

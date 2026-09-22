@@ -1,6 +1,5 @@
 import json
-import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +24,7 @@ class Database:
                 "format": "elite-document-store",
                 "version": 1,
                 "created": database._now(),
-                "collections": {}
+                "collections": {},
             }
             database._write_json(database.manifest_path, database.manifest)
         else:
@@ -50,7 +49,7 @@ class Database:
             raise ValueError("Die Datei ist keine ELITE-Dokumentdatenbank.")
 
     def _now(self):
-        return datetime.now(timezone.utc).isoformat()
+        return datetime.now(UTC).isoformat()
 
     def _read_json(self, path):
         with Path(path).open("r", encoding="utf-8") as file:
@@ -70,7 +69,7 @@ class Database:
         self.manifest.setdefault("collections", {})[name] = {
             "path": f"documents/{name}",
             "index": f"indexes/{name}.json",
-            "identity": "id"
+            "identity": "id",
         }
         (self.documents / name).mkdir(parents=True, exist_ok=True)
         self.rebuild_index(name)
@@ -145,11 +144,15 @@ class Database:
         return result
 
     def rebuild_index(self, collection: str):
-        documents = self.all(collection) if collection in self.manifest.get("collections", {}) else []
+        documents = (
+            self.all(collection) if collection in self.manifest.get("collections", {}) else []
+        )
         index = {"byId": {}, "byType": {}, "updated": self._now()}
         for document in documents:
             record_id = str(document["id"])
-            relative = str(self._document_path(collection, record_id).relative_to(self.root)).replace("\\", "/")
+            relative = str(
+                self._document_path(collection, record_id).relative_to(self.root)
+            ).replace("\\", "/")
             index["byId"][record_id] = relative
             if document.get("type"):
                 index["byType"].setdefault(document["type"], []).append(record_id)
@@ -159,7 +162,11 @@ class Database:
 
     def revisions(self, collection: str, record_id: str):
         folder = self.history / collection / record_id
-        return [self._read_json(path) for path in sorted(folder.glob("*.json"))] if folder.exists() else []
+        return (
+            [self._read_json(path) for path in sorted(folder.glob("*.json"))]
+            if folder.exists()
+            else []
+        )
 
     def _save_history(self, collection, record_id, document):
         folder = self.history / collection / record_id

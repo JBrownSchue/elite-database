@@ -212,8 +212,8 @@ product = {
         "publisher": "Beispielverlag",
         "minimumPlayers": 2,
         "maximumPlayers": 5,
-        "playingTimeMinutes": 90
-    }
+        "playingTimeMinutes": 90,
+    },
 }
 
 database.insert("products", product)
@@ -275,19 +275,13 @@ for product in results:
 Search with a nested-field filter:
 
 ```python
-results = database.search(
-    "products",
-    category="Brettspiele"
-)
+results = database.search("products", category="Brettspiele")
 ```
 
 Nested paths can be used for filters:
 
 ```python
-results = database.search(
-    "products",
-    **{"attributes.publisher": "Beispielverlag"}
-)
+results = database.search("products", **{"attributes.publisher": "Beispielverlag"})
 ```
 
 ### Rebuild an index
@@ -318,11 +312,7 @@ Create a migration script or run this code from the project root:
 ```python
 from data.elitedb import migrate_json
 
-migrate_json(
-    source="database.json",
-    destination="database",
-    collection="products"
-)
+migrate_json(source="database.json", destination="database", collection="products")
 ```
 
 The result is one JSON file per product under:
