@@ -19,11 +19,11 @@ class AttributeEditor(QWidget):
     def __init__(self, attributes=None, parent=None):
         super().__init__(parent)
         self.rows = []
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.add_button = QPushButton("＋ Eigenschaft hinzufügen")
         self.add_button.clicked.connect(self.add_row)
-        self.layout.addWidget(self.add_button)
+        self.main_layout.addWidget(self.add_button)
         for key, value in (attributes or {}).items():
             self.add_row(key, value)
 
@@ -41,7 +41,7 @@ class AttributeEditor(QWidget):
         row.addWidget(kind, 1)
         row.addWidget(value_field, 2)
         row.addWidget(remove)
-        self.layout.insertLayout(self.layout.count() - 1, row)
+        self.main_layout.insertLayout(self.main_layout.count() - 1, row)
         record = (row, name, kind, value_field)
         self.rows.append(record)
         remove.clicked.connect(lambda: self.remove_row(record))
@@ -67,7 +67,7 @@ class AttributeEditor(QWidget):
             item = row.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
-        self.layout.removeItem(row)
+        self.main_layout.removeItem(row)
         self.rows.remove(record)
 
     def values(self):
@@ -135,13 +135,15 @@ class ProductDialog(QDialog):
 
     def accept(self):
         try:
-            values = {key: field.text().strip() for key, field in self.fields.items() if isinstance(field, QLineEdit)}
+            values: dict[str, object] = {
+                key: field.text().strip() for key, field in self.fields.items() if isinstance(field, QLineEdit)
+            }
             if any(not values[key] for key in ("id", "sku", "name")):
                 raise ValueError("ID, SKU und Name sind erforderlich.")
             values["stockQuantity"] = self.fields["stockQuantity"].value()
             values["isActive"] = self.fields["isActive"].isChecked()
             values["attributes"] = self.attributes.values()
-            self.result = values
+            self.document = values
             super().accept()
         except ValueError as error:
             QMessageBox.warning(self, "Eingabe prüfen", str(error))
@@ -252,7 +254,7 @@ class MainWindow(QMainWindow):
         dialog = ProductDialog(parent=self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             try:
-                self.database.insert("products", dialog.result)
+                self.database.insert("products", dialog.document)
                 self.save_database()
                 self.refresh()
             except ValueError as error:
@@ -266,7 +268,7 @@ class MainWindow(QMainWindow):
         dialog = ProductDialog(product, self)
         if dialog.exec() == QDialog.DialogCode.Accepted:
             try:
-                self.database.update("products", product["id"], dialog.result)
+                self.database.update("products", product["id"], dialog.document)
                 self.save_database()
                 self.refresh()
             except (ValueError, KeyError) as error:
