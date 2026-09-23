@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from data.elitedb import Database
+from data.elitedb import Database, export_json
 
 DATABASE_PATH = Path(__file__).resolve().parents[2] / "database"
 
@@ -336,6 +336,13 @@ class MainWindow(QMainWindow):
     def save_database(self):
         try:
             self.database.rebuild_index("products")
+
+            export_json(
+                DATABASE_PATH,
+                DATABASE_PATH.parent / "database.json",
+                "products",
+            )
+
             self.statusBar().showMessage("Änderungen gespeichert")
         except (OSError, ValueError) as error:
             QMessageBox.critical(self, "Speicherfehler", str(error))

@@ -1,77 +1,92 @@
 {
   "products": [
     {
-      "id": "prod-001",
-      "sku": "TSHIRT-001",
-      "name": "Basic T-Shirt",
-      "description": "Klassisches T-Shirt aus Baumwolle.",
-      "category": "Bekleidung",
-      "brand": "Beispielmarke",
-      "prices": [
-        {
-          "currency": "EUR",
-          "amount": 1999,
-          "taxRate": 19,
-          "priceType": "standard",
-          "validFrom": "2025-01-01",
-          "validUntil": null
-        }
-      ],
-      "stockQuantity": 100,
-      "isActive": true
-    },
-    {
-      "id": "prod-002",
-      "sku": "HOODIE-001",
-      "name": "Premium Hoodie",
-      "description": "Warmer Hoodie mit Kapuze.",
-      "category": "Bekleidung",
-      "brand": "Beispielmarke",
-      "prices": [
-        {
-          "currency": "EUR",
-          "amount": 4999,
-          "taxRate": 19,
-          "priceType": "standard",
-          "validFrom": "2025-01-01",
-          "validUntil": null
-        },
-        {
-          "currency": "EUR",
-          "amount": 3999,
-          "taxRate": 19,
-          "priceType": "sale",
-          "validFrom": "2025-02-01",
-          "validUntil": "2025-02-28"
-        }
-      ],
-      "stockQuantity": 50,
-      "isActive": true
-    },
-    {
-      "id": "123",
-      "sku": "TSHIRT-002",
-      "name": "sdf",
-      "description": "sdf",
-      "category": "Bekleidung",
-      "brand": "sdf",
-      "stockQuantity": 2,
+      "id": "1",
+      "sku": "POMMES-001",
+      "name": "Pommes",
+      "description": "Eine Packung Pommes",
+      "category": "Pommes",
+      "brand": "Herta",
+      "stockQuantity": 500,
       "isActive": true,
-      "prices": [
-        10
-      ]
+      "attributes": {},
+      "type": "product",
+      "meta": {
+        "updated": "2026-09-23T09:56:34.021190+00:00",
+        "revision": 5,
+        "created": "2026-09-23T09:51:26.754137+00:00"
+      }
     },
     {
-      "id": "12345678",
-      "sku": "1234567",
-      "name": "1234567",
-      "description": "1234567",
-      "category": "1234567123456723",
-      "brand": "",
-      "stockQuantity": 453454354,
+      "id": "11",
+      "sku": "BIER-009",
+      "name": "Bier",
+      "description": "Eine Flasche Bier",
+      "category": "Alkohol",
+      "brand": "Manana",
+      "stockQuantity": 13,
+      "isActive": false,
+      "attributes": {
+        "Alkoholfrei": false
+      },
+      "type": "product",
+      "meta": {
+        "updated": "2026-09-23T10:03:40.793507+00:00",
+        "revision": 7,
+        "created": "2026-09-23T09:50:30.473338+00:00"
+      }
+    },
+    {
+      "id": "12",
+      "sku": "BIER-011",
+      "name": "Bier",
+      "description": "Eine Flasche Bier",
+      "category": "Alkohol",
+      "brand": "Herp",
+      "stockQuantity": 8721,
+      "isActive": true,
+      "attributes": {},
+      "type": "product",
+      "meta": {
+        "updated": "2026-09-23T09:57:27.332095+00:00",
+        "revision": 2,
+        "created": "2026-09-23T09:49:44.426622+00:00"
+      }
+    },
+    {
+      "id": "10",
+      "sku": "POMMES-001",
+      "name": "Pommes",
+      "description": "Eine Packung Pommes",
+      "category": "Pommes",
+      "brand": "Herta",
+      "stockQuantity": 500,
+      "isActive": true,
+      "attributes": {},
+      "type": "product",
+      "meta": {
+        "updated": "2026-09-23T09:56:26.675778+00:00",
+        "revision": 5,
+        "created": "2026-09-22T08:38:36.052772+00:00"
+      }
+    },
+    {
+      "id": "9",
+      "sku": "BIER-009",
+      "name": "Bier",
+      "description": "Eine Flasche Bier",
+      "category": "Alkohol",
+      "brand": "Export",
+      "stockQuantity": 1,
       "isActive": true,
       "attributes": {
-        "Cyka": "Lecko mio"
+        "Alkoholfrei": false
+      },
+      "type": "product",
+      "meta": {
+        "updated": "2026-09-23T09:55:51.038608+00:00",
+        "revision": 2,
+        "created": "2026-09-23T09:54:48.232359+00:00"
       }
     }
   ]

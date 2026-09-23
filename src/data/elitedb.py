@@ -201,3 +201,12 @@ def migrate_json(source: str | Path, destination: str | Path, collection="produc
     for record in records:
         database.insert(collection, record)
     return database
+
+def export_json(database_path, output_path, collection="products"):
+    database = Database.load(database_path)
+    data = {collection: database.all(collection)}
+
+    Path(output_path).write_text(
+        json.dumps(data, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )

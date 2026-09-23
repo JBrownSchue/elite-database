@@ -10,6 +10,7 @@ dependencies = [
 
 [project.scripts]
 gui = "gui.main:main"
+migration = "data.migration:main"
 
 [build-system]
 requires = ["hatchling"]
